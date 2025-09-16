@@ -1,0 +1,482 @@
+---
+title: FINAL REPORT
+author: BODY COMPOSITION AND FITNESS LEVEL
+date: "`r params$Name`"
+output: pdf_document
+resource_files:
+  - George_Washington_University_wordmark.png
+  - fitgut_yelloBlue.png
+header-includes:
+  - \usepackage{fancyhdr} 
+  - \usepackage{titling}
+  - \usepackage{float} 
+  - \usepackage{booktabs}
+  - \usepackage[table,dvipsnames]{xcolor}
+  - \usepackage{caption}
+  - \captionsetup[table]{justification=raggedright,singlelinecheck=false}
+  - \usepackage{graphicx}
+  - \usepackage{tikz}
+  - \usetikzlibrary{calc}
+  - \usepackage{needspace}
+  - |
+    % Move the whole title block upward
+    \setlength{\droptitle}{-6em}   % negative = moves title closer to top
+    
+    % Title (big, bold)
+    \pretitle{\begin{center}\LARGE\bfseries}
+    % ↓ change the gap after the title:
+    % negative value = tighter, positive = looser
+    \posttitle{\par\end{center}\vspace{-2.8em}}
+
+    % Author (your 2nd big line)
+    \preauthor{\begin{center}\LARGE\bfseries}
+    % ↓ space after the 2nd line, before the small subtitle/date
+    \postauthor{\par\end{center}\vspace{-2.0em}}
+
+    % Small subtitle
+    \predate{\begin{center}\fontsize{12pt}{12pt}\selectfont}
+
+    %Move minipage up
+    \postdate{\par\end{center}\vspace{-5.5em}}
+  - \captionsetup[table]{aboveskip=0.4pt, belowskip=0.4pt}
+  
+params:
+    HR_Z1: NULL
+    HR_Z2: NULL
+    HR_Z3: NULL
+    HR_Z4: NULL
+    HR_Z5: NULL
+    Hand: NULL
+    Name: NULL
+    participantID: NULL
+    BP: NULL
+    TAG: NULL
+    totCHOL: NULL
+    HDL: NULL
+    FasGlu: NULL
+    Waist: NULL
+    VO2max: NULL
+    plot: NULL
+    DXAimage: NULL 
+    fatPercent: NULL
+    totalMass: NULL
+    fatMass: NULL
+    leanMass: NULL
+    handEval: NULL
+    VO2Eval: NULL
+---
+\captionsetup[table]{labelformat=empty}
+
+```{=latex}
+\begin{tikzpicture}[remember picture,overlay]
+  % anchor at the page’s top-right corner, then nudge left/down
+  \node[anchor=north east] at ($(current page.north east)+(-0.5cm,-0.5cm)$) {%
+    \makebox[0pt][r]{%
+      \includegraphics[height=1.5cm]{George_Washington_University_wordmark.png}\hspace{6pt}%
+      \includegraphics[height=1.5cm]{firgut_blue_logo.png}%
+    }
+  };
+\end{tikzpicture}
+```
+
+```{r libraries, include = FALSE}
+library(kableExtra)
+library(knitr)
+options(kableExtra.latex.load_packages = TRUE)
+#tinytex::tlmgr_install("booktabs")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r check values, echo  = FALSE}
+
+# cat("blood pressue: ", params$BP)
+# cat("triglyceride: ", params$TAG)
+# cat("chol: ", params$totCHOL)
+# cat("LDL: ", params$LDL)
+# cat("fasting glucose: ", params$FasGlu)
+# cat("waist", params$Waist)
+# cat("VO2 max", params$VO2max)
+# cat("fatPercent", params$fatPercent)
+# cat("totalMass", params$totalMass)
+# cat("fatMass", params$fatMass)
+# cat("leanMass", params$leanMass)
+# cat("handEval", params$handEval)
+# cat("VO2Eval", params$VO2Eval)
+#cat("description", params$description)
+```
+
+
+```{r assign, echo = FALSE}
+Z11 <- params$HR_Z1[[1]]
+Z12 <- params$HR_Z1[[2]]
+Z21 <- params$HR_Z2[[1]]
+Z22 <- params$HR_Z2[[2]]
+Z31 <- params$HR_Z3[[1]]
+Z32 <- params$HR_Z3[[2]]
+Z41 <- params$HR_Z4[[1]]
+Z42 <- params$HR_Z4[[2]]
+Z51 <- params$HR_Z5[[1]]
+Z52 <- params$HR_Z5[[2]]
+# 
+# print("params$HR_Z1")
+# str(params$HR_Z1)
+# print(params$HR_Z1, digits = 10)
+# 
+# print("--------------")
+# 
+# print("params$HR_Z1[[1]]")
+# print(params$HR_Z1[[1]])
+# print("params$HR_Z1[[2]]")
+# print(params$HR_Z1[[2]])
+
+
+```
+
+```{r cardiotable, echo = FALSE}
+# --- Build the table ---
+#formatting percentage
+formattedvaluepercent <- paste0(as.character(params$fatPercent), "\\%")
+totalMasswscale <- paste(params$totalMass, "lbs")
+fatMasswscale <- paste(params$fatMass, "lbs")
+leanMasswscale <- paste(params$leanMass, "lbs")
+
+
+dfp <- tibble(
+  bodyweight = c("Total Body Weight", totalMasswscale),
+  fatmass = c("Fat Mass", fatMasswscale),
+  fatfreemass = c("Fat Free Mass", leanMasswscale),
+  totalfatper = c("Total fat \\%", formattedvaluepercent)
+)
+
+cardiotable <- kbl(
+  dfp, format = "latex", booktabs = TRUE, escape = FALSE,
+  col.names = NULL, align = c("l","l")
+) |>
+  # row_spec(2, bold = TRUE) |>         # ← bold the 2nd row
+  # kable_styling(full_width = FALSE) |>
+  as.character()
+```
+
+``` {r, determinecolor, echo = FALSE}
+highlight <- function(eval){
+  color <- NA
+  if(eval == "Poor"){
+    color <- "#F3BFBE"
+  }
+  else if(eval== "Fair"){
+    color <- "#FBF5C0"
+  }
+  else if(eval== "Good"){
+    color <- "#D0F1F5"
+  }
+  else{ #excellent
+    color <- "#C2DFC4"
+  }
+  
+  return(color)
+  
+}
+
+```
+
+```{r fitnessvalues, echo = FALSE}
+#formatting vo2
+vo2value<- sprintf("%.2f", params$VO2max)
+formattedvaluevo2  <- paste(as.character(vo2value), "L/kg")
+
+#formatting hand
+handvaluevaluehand <- paste(as.character(params$Hand), "kg")
+
+dfc <- tibble(
+  Name = c("VO2 max", "Strength Report (hand-grip strength)"),
+  Value = c(formattedvaluevo2, handvaluevaluehand),
+  Evaluation = c(params$VO2Eval, params$handEval)
+)
+
+vo2color <- highlight(params$VO2Eval)
+handcolor <- highlight(params$handEval)
+  
+dfc$Evaluation[1] <- cell_spec(dfc$Evaluation[1], background = vo2color)
+dfc$Evaluation[2] <- cell_spec(dfc$Evaluation[2], background = handcolor)
+
+fitnesstable <- knitr::kable(
+  dfc, format = "latex", booktabs = TRUE, escape = FALSE,
+  col.names = NULL, align = c("l","l","l")
+) |> as.character()
+
+# dfc %>%
+#   kbl(escape = FALSE, booktabs = TRUE, col.names = NULL, caption = "\\textbf{Cardiovascular fitness report}") %>%
+#   kable_styling(latex_options = c("hold_position"), full_width = FALSE)
+```
+
+
+```{r generatetext, results='asis', echo = FALSE}
+  generaltext <- "Below is a breakdown of your total body weight, fat mass, free-fat mass, and total fat percentage. Under the Fitness report, you will find information for your true working zones calculated from the fitness test."
+
+vo2 <- params$VO2Eval
+hand<- params$handEval
+    
+  additional <- ""
+if (hand == "Poor" || vo2 == "Poor") { 
+  if (hand == "Poor" && vo2 == "Poor") { 
+    # both poor → nothing
+  } else if (hand == "Poor") { 
+    additional <- paste("Your", "$VO_2$max", "is", tolower(vo2), "considering your age, and biological sex.")
+  } else { 
+    additional <- paste("Your strength is", tolower(hand), "considering your age, and biological sex")
+  }
+} else if (hand != vo2) { 
+  additional <- paste("Your strength is", tolower(hand), "and your", "$VO_2$max", "is", tolower(vo2), "considering your age, and biological sex")
+} else { 
+  additional <- paste("Your strength and", "$VO_2$max", "is", tolower(vo2), "considering your age, and biological sex")
+}
+  
+finaltext <- paste(generaltext, additional)
+ 
+```
+
+```{r, results='asis', echo = FALSE}
+image_path <- gsub("\\\\","/", normalizePath(params$DXAimage, mustWork = TRUE))
+
+initialpara <- paste0("Below is a breakdown of your total body weight, fat mass, free-fat mass,
+and total fat percentage. Under the Fitness report, you will find information
+for your true working zones calculated from the fitness test. ", finaltext)
+
+midpara <- paste0("$VO_2$max" ," and handgrip strength are key indicators of overall fitness,
+assessing different aspects of physical capacity. ", "$VO_2$max" ," measures the
+maximum amount of oxygen your body can utilize during intense
+exercise, reflecting cardiovascular and aerobic fitness. A higher ", "$VO_2$max",
+" indicates better endurance and efficiency in oxygen delivery. Handgrip
+strength, on the other hand, evaluates muscular strength and is linked
+to overall muscle function, mobility, and even long-term health
+outcomes. Together, these measurements provide a comprehensive
+view of both aerobic capacity and muscular strength, essential
+components of physical fitness")
+
+
+cat(sprintf('
+\\begin{minipage}[t]{0.23\\textwidth}
+  \\vspace{0pt}%% ensure true top alignment
+  \\includegraphics[width=\\linewidth]{%s}
+\\end{minipage}
+\\hfill
+\\begin{minipage}[t]{0.75\\textwidth}
+  %% kill extra caption/table spacing
+  {\\setlength{\\abovecaptionskip}{0pt}%%
+   \\setlength{\\belowcaptionskip}{0pt}%%
+   \\setlength{\\LTpre}{0pt}%%
+   \\setlength{\\LTpost}{0pt}%%
+   \\par\\vspace{0.8\\baselineskip}
+   \\fontsize{10pt}{12pt}\\selectfont
+   %s
+   \\par\\vspace{0.8\\baselineskip}
+   \\captionof{table}{\\textbf{Body Composition}}
+   \\nointerlineskip 
+   %s
+   \\par\\vspace{0.8\\baselineskip}
+   %s
+   \\par\\vspace{0.8\\baselineskip}
+   \\captionof{table}{\\textbf{Cardiovascular Fitness Report}}
+   %s}
+\\end{minipage}
+', image_path, initialpara, cardiotable, midpara, fitnesstable))
+```
+
+
+```{r othermetrics, echo = FALSE}
+
+BPwunits <- paste(params$BP, " mmHg")
+TAGwunits<- paste(params$TAG, " mg/dL")
+totCHOLwunits<- paste(params$totCHOL, " mg/dL")
+HDLwunits<- paste(params$HDL, " mg/dL")
+FasGluwunit<- paste(params$FasGlu, " mg/dL")
+Waistwunits <- paste(params$Waist, " cm")
+
+dfp <- tibble(
+  blood_pressure = c("Blood Pressure", BPwunits),
+  Triglycerides = c("Triglycerides", TAGwunits),
+  totalcholesterol = c("Total Cholesterol", totCHOLwunits),
+  HDL = c("High Density Lipoprotein (HDL-c)", HDLwunits),
+  fastingglucose = c("Fasting Glucose", FasGluwunit),
+  waistmeasure = c("Waist", Waistwunits)
+)
+
+dfp %>%
+  kbl(escape = FALSE, booktabs = TRUE, col.names = NULL, caption = "\\textbf{Other measurements}") %>%
+  kable_styling(latex_options = c("hold_position"), full_width = FALSE)
+```
+
+\begin{flushleft}
+\vspace*{-1\baselineskip}
+\noindent
+\textbf{Blood Pressure}: The pressure of the blood on artery walls. Lower resting blood pressure improves cardiac efficiency, reducing stroke and heart risks.\\
+\textbf{Triglycerides}: A type of fat in the body that stores energy. It can rise with unhealthy diets, as well as underlying conditions.\\
+\textbf{Total Cholesterol}: The sum of various types of cholesterol in the body, such as Low-Density Lipoproteins (LDL), High-Density Lipoproteins (HDL), and Very-Low-Density Lipoproteins (VLDL).\\
+\textbf{High-Density Lipoproteins}: Often called the “good” type of cholesterol in the body. It removes free cholesterol from the arteries to the liver, and has an antioxidant and anti-inflammatory effect.\\
+\textbf{Fasting Glucose}: The level of blood sugar after 8 hours or more of fasting. It can help assess the risk of developing or existing diabetes.\\
+\textbf{Waist Circumference}: An indication of the amount of visceral fat, a type of fat stored deep in the abdominal cavity. Less visceral fat usually indicates better cardio-metabolic health.
+\end{flushleft}
+
+```{r zonetable, echo = FALSE}
+dfz <- data.frame(
+  Category = c(" ","Training", "HR(bpr range)", "Energy Source"),
+  Zone1 = c("Zone 1","Active Recovery", paste(Z11,"-", Z12), "Fat"),
+  Zone2 = c("Zone 2","Aerobic Endurance", paste(Z21,"-", Z22), "Fat"),
+  Zone3 = c("Zone 3","Mixed", paste(Z31,"-", Z32), "Mixed"),
+  Zone4 = c("Zone 4","Anarobic Endurance", paste(Z41,"-", Z42), "Carbohydrates"),
+  Zone5 = c("Zone 5","Maximal Capacity", paste(Z51,"-", Z52), "Carbohydrates")
+)
+
+#coloring and formatting
+dfz[2, "Zone1"] <- cell_spec(dfz[2, "Zone1"], format = "latex", background = "green!30")
+dfz[2, "Zone2"] <- cell_spec(dfz[2, "Zone2"], format = "latex", background = "blue!20")
+dfz[2, "Zone3"] <- cell_spec(dfz[2, "Zone3"], format = "latex", background = "yellow!30")
+dfz[2, "Zone4"] <- cell_spec(dfz[2, "Zone4"], format = "latex", background = "orange!30")
+dfz[2, "Zone5"] <- cell_spec(dfz[2, "Zone5"], format = "latex", background = "red!30")
+
+# zonestable <- knitr::kable( dfz, format = "latex", booktabs = TRUE, escape = FALSE, col.names = NULL, align = c("l","l","l") ) |> as.character()
+# 
+# 
+
+# zonestable <- knitr::kable(
+#   dfz, format = "latex", booktabs = TRUE, escape = FALSE,
+#   col.names = NULL,
+#   align = c("l", rep("c", 5)),
+#   longtable = TRUE,
+#   caption = "\\textbf{Exercise Prescription}"
+# ) %>%
+#   kable_styling(full_width = FALSE) %>%
+#   row_spec(1, bold = TRUE) %>%
+#   as.character()
+# 
+#  cat(zonestable)
+
+
+
+#for "primary energy source". the table will be pushed to the next page. 
+# zonestable <- knitr::kable(
+#   dfz, format = "latex", booktabs = TRUE, escape = FALSE,
+#   col.names = NULL, align = c("l","l","l","l","l","l"),
+#   caption = "\\textbf{Exercise Prescription}"
+# 
+# ) %>%
+#   kable_styling(
+#     position   = "center",
+#     full_width = FALSE,
+#     latex_options = "hold_position"   # <- pins it here ([H])
+#   ) %>%
+#   #column_spec(1, width = "4cm") %>%
+  # column_spec(2, width = "2cm") %>%
+  # column_spec(3, width = "2cm") %>%
+  # column_spec(4, width = "2cm") %>%
+  # column_spec(5, width = "2cm") %>%
+  # column_spec(6, width = "2cm") %>%
+#   row_spec(1, bold = TRUE) %>%
+#   column_spec(1, bold = TRUE) %>%
+#   row_spec(1, align = "c") %>%
+#   row_spec(2, align = "c") %>%
+#   as.character()
+
+#for clean one line (change to "energy source")
+zonestable <- knitr::kable(
+  dfz, format = "latex", booktabs = TRUE, escape = FALSE,
+  col.names = NULL, align = c("l","l","l"), longtable = TRUE, 
+  caption = "\\textbf{Exercise Prescription}"
+) %>%
+  kable_styling(
+    full_width = FALSE,
+    latex_options = "hold_position",   # <- pins it here ([H])
+    position = "left"
+  ) %>%
+  row_spec(1, bold = TRUE) %>%
+  column_spec(1, bold = TRUE) %>%
+  as.character()
+
+```
+
+```{r, results = 'asis', echo = FALSE}
+cat(sprintf('
+\\begin{flushleft}
+  \\par\\vspace{-1.1\\baselineskip}
+  \\captionsetup{type=table,justification=raggedright,singlelinecheck=false}
+  \\nointerlineskip 
+  %s
+\\end{flushleft}
+', zonestable))
+
+#for one line table for the "exercise prescription, use \vspace*{-1.3\baselineskip}.
+
+```
+
+```{=latex}
+\begin{tikzpicture}[remember picture,overlay]
+  % anchor at the page’s top-right corner, then nudge left/down
+  \node[anchor=north east] at ($(current page.north east)+(-0.5cm,-0.5cm)$) {%
+    \makebox[0pt][r]{%
+      \includegraphics[height=1.5cm]{George_Washington_University_wordmark.png}\hspace{6pt}%
+      \includegraphics[height=1.5cm]{firgut_blue_logo.png}%
+    }%
+  };
+\end{tikzpicture}
+```
+
+\begin{flushleft}
+\vspace*{-2\baselineskip}
+\textbf{Training zones} can be a valuable tool for tracking your progress and optimizing your overall
+health. By understanding and utilizing these zones, you can tailor your workouts to improve
+endurance, strength, and cardiovascular fitness while minimizing the risk of overtraining.
+Monitoring your heart rate within specific zones ensures that you are training efficiently, making
+each session more effective in supporting long-term health and performance goals.\\
+\uline{Zone 1}: The body is burning primarily fat to supply energy. Examples can include walking, gentle cycling, and stretching.\\
+\uline{Zone 2}: In this zone, your body is still primarily using fat to produce energy. However this will feel slightly intense. Training in this zone decreases insulin resistance and increase the body's ability to transport oxygen to the muscles.\\
+\uline{Zone 3}: In zone 3, the body starts using carbohydrates for energy, this makes it less optimal for weight loss, and more for athletic improvement.\\
+\uline{Zone 4}: Most of the energy is now coming from carbohydrates. Training in this zone increases your VO2 max, and improves speed.\\
+\uline{Zone 5}: This zone can only be sustained for a short amount of time. Training in this zone increases your top speed, VO2, and anaerobic performance.
+\end{flushleft}
+
+```{r, results ='asis', echo = FALSE}
+title <- "\\boldmath$VO_2$max Plot"
+cat(sprintf('
+\\begin{center}
+\\par\\vspace{0.8\\baselineskip}
+\\noindent
+\\uline{\\textbf{%s}}
+\\end{center}
+', title))
+```
+
+```{r vo2plot, echo=FALSE, fig.align='center', out.width="0.8\\textwidth", fig.pos='H', message=FALSE}
+# Nudge the visual center by adding extra left padding
+p <- params$plot +
+  ggplot2::theme(
+    plot.margin = ggplot2::margin(t = 5.5, r = 5.5, b = 5.5, l = 55, unit = "pt")
+  )
+
+print(p)
+
+# ```{r vo2plot, echo=FALSE,fig.align='center', out.width="0.8\\textwidth", fig.pos='H'}
+# params$plot
+```
+
+```{r, results='asis', echo = FALSE}
+
+introsent <- paste0(
+  "This is your ", "$VO_2$max", " graph. This shows three components: ")
+  
+cat(sprintf('
+\\begin{flushleft}
+\\noindent
+%s
+\\textbf{Blue line:} $VO_2$ your oxygen consumption rate during cycling.
+\\textbf{Orange line:} Carbon dioxide production rate (mL/min).
+\\textbf{Red line:} Heart rate in bpm
+Your uline{oxygen} consumption plateaus closer to the end, indicating that you are reaching your $VO_2$max which indicates your maximum rate of oxygen consumption.
+This reflects your cardiorespiratory fitness, and it is considered healthier if your $VO_2$max is higher.
+\\end{flushleft}
+
+', introsent))
+```
+
